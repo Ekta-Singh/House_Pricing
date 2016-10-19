@@ -72,5 +72,5 @@ rmse_rf = RMSE(y_val,preds_rf,wt=1)
 print(rmse_rf)
 
 
-
-
+panel1 <- panel1[,flag:=(ifelse((End_Date-59)<min(Start_Date),Start_Date,(End_date-59)))<=Date & Date<=End_Date,by=Enrollment]
+panel1 <- subset(panel1, flag==T)
