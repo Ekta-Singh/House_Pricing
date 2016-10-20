@@ -5,7 +5,7 @@ treat.missing.values <- function(dat){
   dat1[is.na(dat1[,'LotFrontage']),'LotFrontage']=median(dat1[,'LotFrontage'],na.rm=TRUE)
   dat1$LotFrontage[dat1$LotFrontage==313]=median(dat1[,'LotFrontage'],na.rm=TRUE)
   
-  plot(dat1['LotFrontage'])
+  #plot(dat1['LotFrontage'])
   dat1$Alley=as.character(dat1$Alley)
   dat1[is.na(dat1[,'Alley']),'Alley']='Missing'
   dat1$Alley=as.factor(dat1$Alley)
@@ -55,29 +55,92 @@ treat.missing.values <- function(dat){
   dat1[is.na(dat1[,'GarageQual']),'GarageQual']='No Garage'
   dat1$GarageQual=as.factor(dat1$GarageQual)
   
-  dat1$PoolQC=as.character(dat1$PoolQC)
-  dat1[is.na(dat1[,'PoolQC']),'PoolQC']='No Pool'
-  dat1$PoolQC=as.factor(dat1$PoolQC)
-  
   dat1$Fence=as.character(dat1$Fence)
   dat1[is.na(dat1[,'Fence']),'Fence']='No Fence'
   dat1$Fence=as.factor(dat1$Fence)
   
+  dat1$PoolQC_f=ifelse(is.na(dat1$PoolQC)==TRUE,0,1)
   dat1$MiscFeature_f= as.factor(ifelse(is.na(dat1$MiscFeature)==TRUE,0,1))
   
-  dat1$YearBuiltDecile = cut(dat1$YearBuilt, breaks=25)
-  
-  dat1$GarageYrBltDecile = cut(dat1$GarageYrBlt, breaks=11, labels=F)
-  dat1$GarageYrBltDecile=as.character(dat1$GarageYrBltDecile)
-  dat1[is.na(dat1$GarageYrBltDecile),"GarageYrBltDecile"]="No Garage"
-  dat1$GarageYrBltDecile=as.factor(dat1$GarageYrBltDecile)
-  
-  dat1$YearRemodAddDecile = as.factor(cut(dat1$YearRemodAdd, breaks=3, labels=F))
-  
-
   return (dat1)
 }
 
 RMSE <- function(act, pred,wt){
   sqrt(mean(((act - pred)*wt)^2, na.rm=T))
+}
+
+combine.levels <- function(dat){
+  levels(dat$LotShape)=c("IR1", "IR2_3" ,"IR2_3" ,"Reg")
+  levels(dat$RoofStyle)=c("Flat","Gable" ,"Gambrel", "Mansard_Hip","Mansard_Hip", "Shed")
+  levels(dat$RoofMatl)=c("CompShg", "CompShg", "CompShg" , "CompShg" ,"CompShg", "Tar&Grv","WdShake" ,"WdShngl")
+  levels(dat$Heating)=c("Others" ,"Gas",  "Gas" , "Others" , "Others" , "Others")
+  levels(dat$Electrical)=c("FuseA" ,"FuseF" ,"FuseP", "SBrkr" ,"SBrkr")
+  # levels(dat$GarageQual)
+  # levels(dat$GarageCond)
+  return (dat)
+}
+
+bin.variables <- function(dat){
+  dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,1900,1925,1950,1975,2000,2025), labels = F))
+  
+  dat$GarageYrBltDecile = cut(dat$GarageYrBlt, breaks=c(1900,1925,1950,1975,2000,2025), labels=F)
+  dat$GarageYrBltDecile=as.character(dat$GarageYrBltDecile)
+  dat[is.na(dat$GarageYrBltDecile),"GarageYrBltDecile"]="No Garage"
+  dat$GarageYrBltDecile=as.factor(dat$GarageYrBltDecile)
+  
+  dat$YearRemodAddDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,1950,1975,2000,2025), labels=F))
+  
+  return (dat)
+}
+
+diagnostics.model <- function(dat,model,new_dat){
+  require(ggplot2)
+  
+  # predicted vs actuals
+  df <- subset(new_dat, select=c("SalePrice","predicted_price"))
+  ret = genPlots(df, 100, "Test data: Predicted vs Actuals")
+  ggsave(ret,file="../MODEL/PLOTS/test_actuals_vs_preds.png")
+  
+  df2 <- subset(dat, select=c("SalePrice","predicted_price"))
+  ret = genPlots(df, 200, "Train data: Predicted vs Actuals")
+  ggsave(ret,file="../MODEL/PLOTS/train_actuals_vs_preds.png")
+  
+  # residuals vs predicted
+  df[,residuals:=SalePrice-predicted_price]
+  df2[,residuals:=SalePrice-predicted_price]
+  
+  p = ggplot(df2,aes(y=residuals, x=predicted_price)) + geom_point(size=1,color='#CC0000') + 
+    ggtitle("Train: Predicted vs Residuals")
+  ggsave(p, file="../MODEL/PLOTS/train_res_vs_preds.png")
+  
+  p <- ggplot(df,aes(y=residuals, x=predicted_price)) + geom_point(size=1,color='#CC0000') +
+    ggtitle("Test: Predicted vs Residuals")
+  ggsave(p, file="../MODEL/PLOTS/test_res_vs_preds.png")
+}
+
+genPlots <- function(dat, buckets=200, tt){
+  if(nrow(dat)>0)
+  {dat <- dat[order(preds),]
+  
+  sq = seq(1, nrow(dat), length.out=buckets+1)
+  sq = ceiling(sq)
+  sq = unique(c(sq, nrow(dat)))
+  
+  for (i in 1:(length(sq)-1)){
+    dat[sq[[i]]:sq[[i+1]], group:=i]
+  }
+  
+  f = dat[,j=list(prediction = mean(predicted_price),
+                  actuals = mean(SalePrice)
+  ), by="group"]
+  
+  
+  ret = ggplot(f, aes(x=prediction, y=actuals)) + geom_point(size=1,
+                                                             color='#CC0000') +
+    geom_smooth() + geom_abline() + ggtitle(tt)
+  } else {text = "No actual data "
+  ret=ggplot() + annotate("text", x=4, y=4, label=text) + ggtitle(tt)
+  }
+  return(ret)
+  
 }

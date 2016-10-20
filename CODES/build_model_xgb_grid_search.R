@@ -1,38 +1,33 @@
 library(data.table)
 train_orig <- copy(train)
 set.seed(123)
-indx = sample(1:nrow(train),0.2*nrow(train),replace = F)
+indx = sample(1:nrow(train),0.3*nrow(train),replace = F)
 val <- train[indx,]
 train <- train[-indx,]
-# train <- subset(train,select = c(feat,"SalePrice"))
-# val <- subset(val,select = c(feat,"SalePrice"))
+drop.cols = c("BsmtCond","ExterCond","GarageCond")
+train <- subset(train,select = !(colnames(train)%in% drop.cols))
+val <- subset(val,select = !(colnames(val)%in% drop.cols))
 
-xgb_grid = expand.grid(nrounds = c(100,300,500,600,800),
-                       eta = c(0.005, 0.01, 0.02, 0.03, 0.05),
-                       max_depth = c(5,8,10))
+xgb_grid = expand.grid(nrounds = c(800,1000,1200,1500),
+                       eta = c(0.001, 0.005, 0.008, 0.01),
+                       max_depth = c(5,6,8),
+                       colsample_bytree = c(0.5,0.75,0.9,1),
+                       min_child_weight = c(5,10,20,50))
 
 library(xgboost)
-y_train <- train[["SalePrice"]]
+y_train <- log(train[["SalePrice"]]+1)
 x_train = copy(train)
 
 cols.fac <- names(which(sapply(train,class)=="factor"))
 x_train <- x_train[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
 x_train[,SalePrice:=NULL]
 
-y_val <- val[["SalePrice"]]
+y_val <- log(val[["SalePrice"]]+1)
 x_val = copy(val)
 
 x_val <- x_val[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
 x_val[,SalePrice:=NULL]
 
-
-model_xgb <- xgboost(data=as.matrix(x_train),label = y_train, nrounds = 300,
-                     params = param, verbose = 0)
-imp_xgb = xgb.importance(model = model_xgb, feature_names = colnames(x_train))
-
-preds_xgb = predict(model_xgb,newdata = as.matrix(x_val))
-rmse_xgb = RMSE(y_val,preds_xgb,wt=1)
-print(rmse_xgb)
 
 rmse_grid_search <- apply(xgb_grid, 1, function(parameterList){
   
@@ -42,8 +37,8 @@ rmse_grid_search <- apply(xgb_grid, 1, function(parameterList){
                 objective="reg:linear",
                 eval_metric="rmse",
                 # subsample = 0.75,
-                min_child_weight = 10,
-                colsample_bytree = 0.75,
+                min_child_weight = parameterList[5],
+                colsample_bytree = parameterList[4],
                 base_score =0)
 
   model_xgb <- xgboost(data=as.matrix(x_train),label = y_train, nrounds = parameterList[1],

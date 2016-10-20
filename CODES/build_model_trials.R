@@ -1,11 +1,12 @@
 library(data.table)
 train_orig <- copy(train)
 set.seed(123)
-indx = sample(1:nrow(train),0.2*nrow(train),replace = F)
+indx = sample(1:nrow(train),0.3*nrow(train),replace = F)
 val <- train[indx,]
 train <- train[-indx,]
-train <- subset(train,select = c(feat,"SalePrice"))
-val <- subset(val,select = c(feat,"SalePrice"))
+drop.cols = c("BsmtCond","ExterCond","GarageCond")
+train <- subset(train,select = !(colnames(train)%in% drop.cols))
+val <- subset(val,select = !(colnames(val)%in% drop.cols))
 ###############################
 fit <- lm(SalePrice~., train)
 rm.cols2 <- which(is.na(fit$coefficients))
@@ -24,29 +25,29 @@ rmse_gbm = RMSE(val[["SalePrice"]],preds_gbm,wt=1)
 print(rmse_gbm)
 #############################
 library(xgboost)
-y_train <- train[["SalePrice"]]
+y_train <- log(train[["SalePrice"]]+1)
 x_train = copy(train)
 
 cols.fac <- names(which(sapply(train,class)=="factor"))
 x_train <- x_train[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
 x_train[,SalePrice:=NULL]
 
-y_val <- val[["SalePrice"]]
+y_val <- log(val[["SalePrice"]]+1)
 x_val = copy(val)
 
 x_val <- x_val[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
 x_val[,SalePrice:=NULL]
 
-param <- list(max_depth = 5, 
-              eta = 0.02, 
+param <- list(max_depth = 6, 
+              eta = 0.01, 
               silent = 1,
               objective="reg:linear",
               eval_metric="rmse",
               # subsample = 0.75,
               min_child_weight = 10,
-              colsample_bytree = 0.75,
+              colsample_bytree = 0.5,
               base_score =0)
-model_xgb <- xgboost(data=as.matrix(x_train),label = y_train, nrounds = 300,
+model_xgb <- xgboost(data=as.matrix(x_train),label = y_train, nrounds = 1000,
                      params = param, verbose = 0)
 imp_xgb = xgb.importance(model = model_xgb, feature_names = colnames(x_train))
 
@@ -54,13 +55,26 @@ preds_xgb = predict(model_xgb,newdata = as.matrix(x_val))
 rmse_xgb = RMSE(y_val,preds_xgb,wt=1)
 print(rmse_xgb)
 
+preds_xgb_train = predict(model_xgb,newdata = as.matrix(x_train))
+rmse_xgb_train = RMSE(y_train,preds_xgb_train,wt=1)
+print(rmse_xgb_train)
+
+train[,predicted_price:=(exp(preds_xgb_train)-1)]
+val[,predicted_price:= (exp(preds_xgb)-1)]
+
+write.csv(train, file="../DERIVED/train.csv", row.names = F)
+write.csv(val, file="../DERIVED/validation.csv", row.names = F)
+
+diagnostics.model(dat = train, model = model_xgb, 
+                  new_dat = val)
+
 ###############################
 library(randomForest)
-y_train <- train[["SalePrice"]]
+y_train <- log(train[["SalePrice"]])
 x_train = copy(train)
 x_train[,SalePrice:=NULL]
 
-y_val <- val[["SalePrice"]]
+y_val <- log(val[["SalePrice"]])
 x_val = copy(val)
 x_val[,SalePrice:=NULL]
 

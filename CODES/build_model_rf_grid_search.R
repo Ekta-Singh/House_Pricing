@@ -1,21 +1,21 @@
 library(data.table)
 train_orig <- copy(train)
 set.seed(123)
-indx = sample(1:nrow(train),0.2*nrow(train),replace = F)
+indx = sample(1:nrow(train),0.3*nrow(train),replace = F)
 val <- train[indx,]
 train <- train[-indx,]
 # train <- subset(train,select = c(feat,"SalePrice"))
 # val <- subset(val,select = c(feat,"SalePrice"))
 
-rf_grid = expand.grid(nrounds = c(100,300,500,600,800),
+rf_grid = expand.grid(nrounds = c(500,600,800,1000,1200,1500),
                        nodesize = c(5,10,15, 25, 50))
 
 library(randomForest)
-y_train <- train[["SalePrice"]]
+y_train <- log(train[["SalePrice"]])
 x_train = copy(train)
 x_train[,SalePrice:=NULL]
 
-y_val <- val[["SalePrice"]]
+y_val <- log(val[["SalePrice"]])
 x_val = copy(val)
 x_val[,SalePrice:=NULL]
 

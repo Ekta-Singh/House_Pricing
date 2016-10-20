@@ -19,16 +19,28 @@ table(sapply(test,class))
 train <- treat.missing.values(dat=train)
 test <- treat.missing.values(dat=test)
 
-# Dropping columns and final modifications
+# Binning some numeric variables and dropping the original cols
 train$MSSubClass <- as.factor(train$MSSubClass)
 test$MSSubClass <- as.factor(test$MSSubClass)
 train <- data.table(train)
 test <- data.table(test)
+
+train <- bin.variables(dat=train)
+test <- bin.variables(dat=test)
+
 rmv.cols <- c("Id", "Street","Condition2", "YearBuilt", "MiscFeature", "GarageYrBlt", 
-              "YearRemodAdd", "Utilities")
+              'PoolQC','PoolArea',"YearRemodAdd", "Utilities")
 dim(train);dim(test)
 train[,(rmv.cols):=NULL]
 test[,(rmv.cols):=NULL]
 
 any(is.na(train))
 any(is.na(test))
+
+# Merging levels
+train <- combine.levels(dat=train)
+test <- combine.levels(dat=test)
+
+
+
+
