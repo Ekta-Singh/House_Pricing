@@ -50,6 +50,7 @@ param <- list(max_depth = 6,
 model_xgb <- xgboost(data=as.matrix(x_train),label = y_train, nrounds = 1000,
                      params = param, verbose = 0)
 imp_xgb = xgb.importance(model = model_xgb, feature_names = colnames(x_train))
+write.csv(imp_xgb, file = "../MODEL/imp_xgb.csv", row.names=F)
 
 preds_xgb = predict(model_xgb,newdata = as.matrix(x_val))
 rmse_xgb = RMSE(y_val,preds_xgb,wt=1)

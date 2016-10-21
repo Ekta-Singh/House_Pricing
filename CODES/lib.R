@@ -98,11 +98,11 @@ diagnostics.model <- function(dat,model,new_dat){
   
   # predicted vs actuals
   df <- subset(new_dat, select=c("SalePrice","predicted_price"))
-  ret = genPlots(df, 100, "Test data: Predicted vs Actuals")
+  ret = genPlots(df, NULL, "Test data: Predicted vs Actuals")
   ggsave(ret,file="../MODEL/PLOTS/test_actuals_vs_preds.png")
   
   df2 <- subset(dat, select=c("SalePrice","predicted_price"))
-  ret = genPlots(df, 200, "Train data: Predicted vs Actuals")
+  ret = genPlots(df2, NULL, "Train data: Predicted vs Actuals")
   ggsave(ret,file="../MODEL/PLOTS/train_actuals_vs_preds.png")
   
   # residuals vs predicted
@@ -120,14 +120,17 @@ diagnostics.model <- function(dat,model,new_dat){
 
 genPlots <- function(dat, buckets=200, tt){
   if(nrow(dat)>0)
-  {dat <- dat[order(preds),]
-  
-  sq = seq(1, nrow(dat), length.out=buckets+1)
-  sq = ceiling(sq)
-  sq = unique(c(sq, nrow(dat)))
-  
-  for (i in 1:(length(sq)-1)){
-    dat[sq[[i]]:sq[[i+1]], group:=i]
+  {dat <- dat[order(predicted_price),]
+  if(!is.null(buckets)){
+    sq = seq(1, nrow(dat), length.out=buckets+1)
+    sq = ceiling(sq)
+    sq = unique(c(sq, nrow(dat)))
+    
+    for (i in 1:(length(sq)-1)){
+      dat[sq[[i]]:sq[[i+1]], group:=i]
+    }
+  }else{
+    dat[,group:=1:.N]
   }
   
   f = dat[,j=list(prediction = mean(predicted_price),
