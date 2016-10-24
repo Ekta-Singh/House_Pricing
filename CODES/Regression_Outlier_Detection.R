@@ -118,7 +118,7 @@ drops=c('YearBuilt','MiscFeature','PoolQC','PoolArea','YearRemodAdd','GarageYrBl
 dat1=dat1[, !(names(dat1) %in% drops) ]
 
 
-## Removing Outliers
+## Droping perfectly collinear variables
 dat2=dummy.data.frame(dat1,names=names(which(sapply(dat1,class)=='factor')))
 
 drops=c('MoSoldQtrQ4','YearRemodeDecile(2007,2010]','YearBuiltCombinedOlder than 1900','SaleConditionPartial',
