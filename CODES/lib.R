@@ -61,6 +61,7 @@ treat.missing.values <- function(dat){
   
   dat1$PoolQC_f=ifelse(is.na(dat1$PoolQC)==TRUE,0,1)
   dat1$MiscFeature_f= as.factor(ifelse(is.na(dat1$MiscFeature)==TRUE,0,1))
+  dat1$Condition2_f=ifelse(dat1$Condition2=='Norm',1,0)
   
   return (dat1)
 }
@@ -81,15 +82,19 @@ combine.levels <- function(dat){
 }
 
 bin.variables <- function(dat){
-  dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,1900,1925,1950,1975,2000,2025), labels = F))
+  dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,seq(1900,2010,by = 10)), labels = F))
   
   dat$GarageYrBltDecile = cut(dat$GarageYrBlt, breaks=c(1900,1925,1950,1975,2000,2025), labels=F)
   dat$GarageYrBltDecile=as.character(dat$GarageYrBltDecile)
   dat[is.na(dat$GarageYrBltDecile),"GarageYrBltDecile"]="No Garage"
   dat$GarageYrBltDecile=as.factor(dat$GarageYrBltDecile)
   
-  dat$YearRemodAddDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,1950,1975,2000,2025), labels=F))
-  
+  dat$YearRemodAddDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,seq(1950,2020,by = 20)), labels=F))
+  dat$MoSoldQtr=ifelse(dat1$MoSold<=3,'Q1',
+                        ifelse(dat1$MoSold<=6,'Q2',
+                               ifelse(dat1$MoSold<=9,'Q3',
+                                      ifelse(dat1$MoSold<=12,'Q4'))))
+  dat1$MoSoldQtr=as.factor(dat1$MoSoldQtr)
   return (dat)
 }
 
