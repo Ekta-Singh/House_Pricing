@@ -3,6 +3,7 @@ require(MASS)
 library(caret)
 library(car)
 library(hydroGOF)
+library(e1071)
 
 library(mlbench)
 library(dummies)
@@ -20,7 +21,7 @@ dat=subset(dat,dat$GrLivArea<=4000)
 drops=c('Street','Utilities','Id')
 dat1=dat[, !(names(dat) %in% drops) ]
 
-dat1$SalePrice=log(dat1$SalePrice)
+dat1$SalePrice=log(dat1$SalePrice+1)
 
 dat1$MSSubClass=as.factor(dat1$MSSubClass)
 
@@ -87,7 +88,7 @@ dat1$MiscFeature_f=ifelse(is.na(dat1$MiscFeature)==TRUE,0,1)
 
 dat1$Condition2_f=ifelse(dat1$Condition2=='Norm',1,0)
 
-dat1$YearBuiltCombined= ifelse(dat1$YearBuilt<=1900,'Older than 1900',
+"dat1$YearBuiltCombined= ifelse(dat1$YearBuilt<=1900,'Older than 1900',
                         ifelse(dat1$YearBuilt<=1910,'1900-1910',
                         ifelse(dat1$YearBuilt<=1920,'1910-1920',
                         ifelse(dat1$YearBuilt<=1930,'1920-1930',
@@ -100,22 +101,37 @@ dat1$YearBuiltCombined= ifelse(dat1$YearBuilt<=1900,'Older than 1900',
                         ifelse(dat1$YearBuilt<=1995,'1990-1995',
                         ifelse(dat1$YearBuilt<=2000,'1995-2000',
                         ifelse(dat1$YearBuilt<=2003,'2000-2003',
-                        ifelse(dat1$YearBuilt<=2006,'2003-2006',
-                        ifelse(dat1$YearBuilt<=2008,'2006-2008',
-                        ifelse(dat1$YearBuilt<=2010,'2008-2010'))))))))))))))))
+                        ifelse(dat1$YearBuilt<=2005,'2003-2005',
+                        ifelse(dat1$YearBuilt<=2007,'2005-2007',
+                        ifelse(dat1$YearBuilt<=2010,'2007-2010',
+                        ifelse(dat1$YearBuilt==2010,'2010')))))))))))))))))"
 
-dat1$YearBuiltCombined=as.factor(dat1$YearBuiltCombined)
+#dat1$YearBuiltCombined=as.factor(dat1$YearBuiltCombined)
+
+dat1$AgeofHouse= dat1$YrSold-dat1$YearBuilt
+drops=c('YearBuilt')
+dat1=dat1[, !(names(dat1) %in% drops) ]
 
 dat1$YearRemodeDecile = cut( dat1$YearRemodAdd, breaks=20)
 
 dat1$MoSoldQtr=ifelse(dat1$MoSold<=3,'Q1',
-                      ifelse(dat1$MoSold<=6,'Q2',
-                             ifelse(dat1$MoSold<=9,'Q3',
-                                    ifelse(dat1$MoSold<=12,'Q4'))))
+               ifelse(dat1$MoSold<=6,'Q2',
+               ifelse(dat1$MoSold<=9,'Q3',
+               ifelse(dat1$MoSold<=12,'Q4'))))
 dat1$MoSoldQtr=as.factor(dat1$MoSoldQtr)
 
-drops=c('YearBuilt','MiscFeature','PoolQC','PoolArea','YearRemodAdd','GarageYrBlt','Condition2','MoSold','HouseStyle')
+drops=c('MiscFeature','PoolQC','PoolArea','YearRemodAdd','GarageYrBlt','Condition2','MoSold','HouseStyle')
 dat1=dat1[, !(names(dat1) %in% drops) ]
+
+#dat1$LotArea_f=ifelse(dat1$LotArea>=35000,35000,dat1$LotArea)
+
+# transform excessively skewed features with log(x + 1)
+
+logTransformCol=c('LotFrontage','MasVnrArea','BsmtFinSF2','BsmtUnfSF','OpenPorchSF','EnclosedPorch','X3SsnPorch','ScreenPorch','GrLivArea')
+
+for(x in logTransformCol) {
+  dat1[[x]] <- log(dat1[[x]] + 1)
+  }
 
 
 ## Dropping perfectly collinear variables
@@ -123,13 +139,14 @@ dat2=dummy.data.frame(dat1,names=names(which(sapply(dat1,class)=='factor')))
 
 drops=c('MoSoldQtrQ4','YearRemodeDecile(2007,2010]','YearBuiltCombinedOlder than 1900','SaleConditionPartial',
         'SaleTypeWD','FenceNo Fence','PavedDriveY','GarageCondNo Garage','GarageCondTA','GarageQualTA','GarageQualNo Garage',
-        'GarageFinishNo Garage','FireplaceQuTA','FunctionalTyp','KitchenQualTA','GrLivArea','ElectricalSBrkr',
+        'GarageFinishNo Garage','FireplaceQuTA','FunctionalTyp','KitchenQualTA','X1stFlrSF','ElectricalSBrkr',
         'CentralAirY','HeatingQCTA','HeatingWall','BsmtFinType2No Basement','BsmtFinType1No Basement','BsmtExposureNo Basement',
         'BsmtCondNo Basement','FoundationWood','ExterCondPo','ExterQualTA','MasVnrTypeStone','Exterior2ndWd Shng',
-        'Exterior2ndCBlock','Exterior1stWdShing','RoofMatlWdShngl','RoofStyleShed','HouseStyleSLvl','BldgTypeTwnhsE',
-        'Condition1RRNn','NeighborhoodVeenker','LandSlopeSev','LotConfigInside','LandContourLvl','LotShapeReg','AlleyPave',
-        'MSZoningRM','BsmtFinType1Unf','BsmtQualTA','GarageFinishUnf','GarageTypeNo Garage','TotalBsmtSF','BsmtCondTA','MSSubClass190',
-        'Exterior1stAsphShn','BsmtExposureNo','HeatingFloor','HeatingQCPo','FunctionalSev','BldgTypeDuplex','BldgType2fmCon')
+        'Exterior2ndCBlock','Exterior1stWdShing','RoofMatlWdShngl','RoofStyleShed','Condition1RRNn',
+        'NeighborhoodVeenker','LandSlopeSev','LotConfigInside','LandContourLvl','LotShapeReg','AlleyPave',
+        'MSZoningRM','BsmtFinType1Unf','BsmtQualTA','GarageFinishUnf','GarageTypeNo Garage','TotalBsmtSF','BsmtCondTA',
+        'Exterior1stAsphShn','BsmtExposureNo','HeatingFloor','HeatingQCPo','FunctionalSev','MSSubClass190',
+        'BldgTypeTwnhsE','BldgType2fmCon','BldgTypeDuplex')
 
 dat2=dat2[, !(names(dat2) %in% drops) ]
 
@@ -155,7 +172,7 @@ test_rmse=rmse(exp(dat2[-train_ind, ]$SalePrice),exp(pred_test))
 train_rmse=rmse(exp(train$SalePrice),exp(pred_train))
 
 ## Ridge regression
-grid=10^seq(10,-2, length =100)
+grid=seq(1,0,-0.001)
 set.seed(1)
 ridge.mod=glmnet(as.matrix(train[,!(names(train) %in% 'SalePrice')]),train$SalePrice,alpha=0, lambda =grid ,
                  thresh =1e-12)
@@ -166,19 +183,25 @@ bestlam =cv.out$lambda.min #0.09013617
 ridge.pred_test=predict (ridge.mod ,s=bestlam ,newx=as.matrix(test))
 ridge.pred_train=predict (ridge.mod ,s=bestlam ,newx=as.matrix(train[,!(names(train) %in% 'SalePrice')]))
 
-test_rmse_ridge=rmse(exp(dat2[-train_ind, ]$SalePrice),exp(ridge.pred_test[,1])) #21527
-train_rmse_ridge=rmse(exp(dat2[train_ind, ]$SalePrice),exp(ridge.pred_train[,1])) #17890
+test_rmse_ridge=rmse(exp(dat2[-train_ind, ]$SalePrice),exp(ridge.pred_test[,1])) #21099
+train_rmse_ridge=rmse(exp(dat2[train_ind, ]$SalePrice),exp(ridge.pred_train[,1])) #17766
+
+test$pred=exp(ridge.pred_test[,1])
+test$SalePrice=exp(dat2[-train_ind, ]$SalePrice)
+test$resid=test$SalePrice-test$pred
+
+write.csv(test,'testError.csv')
 
 ## Lasso Regression
 set.seed(1)
 lasso.mod=glmnet(as.matrix(train[,!(names(train) %in% 'SalePrice')]),train$SalePrice,alpha=1, lambda =grid ,
                  thresh =1e-12)
-cv.out_lasso=cv.glmnet(as.matrix(train[,!(names(train) %in% 'SalePrice')]),train$SalePrice,alpha=1)
+cv.out_lasso=cv.glmnet(as.matrix(train[,!(names(train) %in% 'SalePrice')]),train$SalePrice,alpha=1,)
 plot(cv.out_lasso)
-bestlam_lasso=cv.out_lasso$lambda.min #0.0034
+bestlam_lasso=cv.out_lasso$lambda.min #0.004
 
-lasso.pred_test=predict (lasso.mod ,s=bestlam ,newx=as.matrix(test))
-lasso.pred_train=predict (lasso.mod ,s=bestlam ,newx=as.matrix(train[,!(names(train) %in% 'SalePrice')]))
+lasso.pred_test=predict (lasso.mod ,s=0.004 ,newx=as.matrix(test))
+lasso.pred_train=predict (lasso.mod ,s=0.004 ,newx=as.matrix(train[,!(names(train) %in% 'SalePrice')]))
 
 test_rmse_lasso=rmse(exp(dat2[-train_ind, ]$SalePrice),exp(lasso.pred_test[,1])) #40133
 train_rmse_lasso=rmse(exp(dat2[train_ind, ]$SalePrice),exp(lasso.pred_train[,1])) #44319
@@ -201,6 +224,7 @@ train_rmse_pcr=rmse(exp(dat2[train_ind, ]$SalePrice),exp(as.matrix(pcr.pred_trai
 result <- mvOutlier(as.matrix(dat2), qqplot = TRUE, method = "quan")
 labelsO<-rownames(result$outlier)[result$outlier[,2]==TRUE]
 xcoord<-result$outlier[result$outlier[,2]==TRUE,1]
+
 #recalculate chi-squared values for ranks 50 and 49 (i.e., p=(size:(size-n.outliers + 1))-0.5)/size and df = n.variables = 3
 chis = qchisq(((50:49)-0.5)/50,3)
 text(xcoord,chis,label=labelsO)
