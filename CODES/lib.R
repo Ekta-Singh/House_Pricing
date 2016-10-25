@@ -61,6 +61,7 @@ treat.missing.values <- function(dat){
   
   dat1$PoolQC_f=ifelse(is.na(dat1$PoolQC)==TRUE,0,1)
   dat1$MiscFeature_f= as.factor(ifelse(is.na(dat1$MiscFeature)==TRUE,0,1))
+  dat1$Condition2_f=ifelse(dat1$Condition2=='Norm',1,0)
   
   return (dat1)
 }
@@ -81,15 +82,19 @@ combine.levels <- function(dat){
 }
 
 bin.variables <- function(dat){
-  dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,1900,1925,1950,1975,2000,2025), labels = F))
+  dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,seq(1900,2010,by = 10)), labels = F))
   
   dat$GarageYrBltDecile = cut(dat$GarageYrBlt, breaks=c(1900,1925,1950,1975,2000,2025), labels=F)
   dat$GarageYrBltDecile=as.character(dat$GarageYrBltDecile)
   dat[is.na(dat$GarageYrBltDecile),"GarageYrBltDecile"]="No Garage"
   dat$GarageYrBltDecile=as.factor(dat$GarageYrBltDecile)
   
-  dat$YearRemodAddDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,1950,1975,2000,2025), labels=F))
-  
+  dat$YearRemodAddDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,seq(1950,2020,by = 20)), labels=F))
+  dat$MoSoldQtr=ifelse(dat1$MoSold<=3,'Q1',
+                        ifelse(dat1$MoSold<=6,'Q2',
+                               ifelse(dat1$MoSold<=9,'Q3',
+                                      ifelse(dat1$MoSold<=12,'Q4'))))
+  dat1$MoSoldQtr=as.factor(dat1$MoSoldQtr)
   return (dat)
 }
 
@@ -98,11 +103,11 @@ diagnostics.model <- function(dat,model,new_dat){
   
   # predicted vs actuals
   df <- subset(new_dat, select=c("SalePrice","predicted_price"))
-  ret = genPlots(df, 100, "Test data: Predicted vs Actuals")
+  ret = genPlots(df, NULL, "Test data: Predicted vs Actuals")
   ggsave(ret,file="../MODEL/PLOTS/test_actuals_vs_preds.png")
   
   df2 <- subset(dat, select=c("SalePrice","predicted_price"))
-  ret = genPlots(df, 200, "Train data: Predicted vs Actuals")
+  ret = genPlots(df2, NULL, "Train data: Predicted vs Actuals")
   ggsave(ret,file="../MODEL/PLOTS/train_actuals_vs_preds.png")
   
   # residuals vs predicted
@@ -120,14 +125,17 @@ diagnostics.model <- function(dat,model,new_dat){
 
 genPlots <- function(dat, buckets=200, tt){
   if(nrow(dat)>0)
-  {dat <- dat[order(preds),]
-  
-  sq = seq(1, nrow(dat), length.out=buckets+1)
-  sq = ceiling(sq)
-  sq = unique(c(sq, nrow(dat)))
-  
-  for (i in 1:(length(sq)-1)){
-    dat[sq[[i]]:sq[[i+1]], group:=i]
+  {dat <- dat[order(predicted_price),]
+  if(!is.null(buckets)){
+    sq = seq(1, nrow(dat), length.out=buckets+1)
+    sq = ceiling(sq)
+    sq = unique(c(sq, nrow(dat)))
+    
+    for (i in 1:(length(sq)-1)){
+      dat[sq[[i]]:sq[[i+1]], group:=i]
+    }
+  }else{
+    dat[,group:=1:.N]
   }
   
   f = dat[,j=list(prediction = mean(predicted_price),
