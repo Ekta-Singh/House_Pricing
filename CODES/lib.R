@@ -5,7 +5,7 @@ treat.missing.values <- function(dat){
   dat1[is.na(dat1[,'LotFrontage']),'LotFrontage']=median(dat1[,'LotFrontage'],na.rm=TRUE)
   dat1$LotFrontage[dat1$LotFrontage==313]=median(dat1[,'LotFrontage'],na.rm=TRUE)
   
-  dat[is.na(MSZoning), MSZoning:="RL"]
+  #dat1[is.na(dat1$MSZoning), "MSZoning"]="RL"
   #plot(dat1['LotFrontage'])
   dat1$Alley=as.character(dat1$Alley)
   dat1[is.na(dat1[,'Alley']),'Alley']='Missing'
@@ -34,10 +34,14 @@ treat.missing.values <- function(dat){
   dat1[is.na(dat1[,'BsmtFinType2']),'BsmtFinType2']='No Basement'
   dat1$BsmtFinType2=as.factor(dat1$BsmtFinType2)
   
+  dat1[is.na(dat1[,'TotalBsmtSF']),'TotalBsmtSF']=0
+  dat1[is.na(dat1[,'BsmtFullBath']),'BsmtFullBath']=0
+  dat1[is.na(dat1[,'BsmtHalfBath']),'BsmtHalfBath']=0
+  
   dat1[is.na(dat1[,'Electrical']),'Electrical']='SBrkr'
   
-  dat[is.na(Exterior1st), Exterior1st:="RL"]
-  dat[is.na(Exterior2nd), Exterior2nd:="RL"]
+  #dat1[is.na(dat1$Exterior1st), "Exterior1st"]="Wd Sdng"
+  #dat1[is.na(dat1$Exterior2nd), "Exterior2nd"]="Wd Sdng"
   
   dat1$FireplaceQu=as.character(dat1$FireplaceQu)
   dat1[is.na(dat1[,'FireplaceQu']),'FireplaceQu']='No Fireplace'
@@ -59,19 +63,20 @@ treat.missing.values <- function(dat){
   dat1[is.na(dat1[,'GarageQual']),'GarageQual']='No Garage'
   dat1$GarageQual=as.factor(dat1$GarageQual)
   
+  dat1[is.na(dat1[,'GarageCars']),'GarageCars']=0
+  dat1[is.na(dat1[,'GarageArea']),'GarageArea']=0
+  
   dat1$Fence=as.character(dat1$Fence)
   dat1[is.na(dat1[,'Fence']),'Fence']='No Fence'
   dat1$Fence=as.factor(dat1$Fence)
+  
+  dat1[is.na(dat1[,'KitchenQual']),'KitchenQual']= "TA"
   
   dat1$PoolQC_f=ifelse(is.na(dat1$PoolQC)==TRUE,0,1)
   dat1$MiscFeature_f= as.factor(ifelse(is.na(dat1$MiscFeature)==TRUE,0,1))
   dat1$Condition2_f=ifelse(dat1$Condition2=='Norm',1,0)
   
   return (dat1)
-}
-
-treat.missing.values.onlytest <- function(dat){
-  
 }
 
 RMSE <- function(act, pred,wt){
@@ -84,21 +89,21 @@ combine.levels <- function(dat){
   levels(dat$RoofMatl)=c("CompShg", "CompShg", "CompShg" , "CompShg" ,"CompShg", "Tar&Grv","WdShake" ,"WdShngl")
   levels(dat$Heating)=c("Others" ,"Gas",  "Gas" , "Others" , "Others" , "Others")
   levels(dat$Electrical)=c("FuseA" ,"FuseF" ,"FuseP", "SBrkr" ,"SBrkr")
-  levels(dat)
+  #levels(dat)
   # levels(dat$GarageQual)
   # levels(dat$GarageCond)
   return (dat)
 }
 
 bin.variables <- function(dat){
-  dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,seq(1900,2010,by = 10)), labels = F))
+  #dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,seq(1900,2010,by = 10)), labels = F))
   
-  dat$GarageYrBltDecile = cut(dat$GarageYrBlt, breaks=c(1900,1925,1950,1975,2000,2025), labels=F)
-  dat$GarageYrBltDecile=as.character(dat$GarageYrBltDecile)
-  dat[is.na(dat$GarageYrBltDecile),"GarageYrBltDecile"]="No Garage"
-  dat$GarageYrBltDecile=as.factor(dat$GarageYrBltDecile)
-  
-  dat$YearRemodAddDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,seq(1950,2020,by = 20)), labels=F))
+  # dat$GarageYrBltDecile = cut(dat$GarageYrBlt, breaks=c(1900,1925,1950,1975,2000,2025), labels=F)
+  # dat$GarageYrBltDecile=as.character(dat$GarageYrBltDecile)
+  # dat[is.na(dat$GarageYrBltDecile),"GarageYrBltDecile"]="No Garage"
+  # dat$GarageYrBltDecile=as.factor(dat$GarageYrBltDecile)
+  # 
+  dat$YearRemodeDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,seq(1950,2020,by = 20)), labels=F))
   dat$MoSoldQtr=ifelse(dat$MoSold<=3,'Q1',
                         ifelse(dat$MoSold<=6,'Q2',
                                ifelse(dat$MoSold<=9,'Q3',
