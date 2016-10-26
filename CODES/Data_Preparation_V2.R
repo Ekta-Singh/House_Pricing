@@ -28,8 +28,15 @@ test <- data.table(test)
 train <- bin.variables(dat=train)
 test <- bin.variables(dat=test)
 
-rmv.cols <- c("Id", "Street","Condition2", "YearBuilt", "MiscFeature", "GarageYrBlt", 
-              'PoolQC','PoolArea',"YearRemodAdd", "Utilities")
+train <- misc.features(dat=train)
+test <- misc.features(dat=test)
+
+rmv.cols <- c("Id", "Street","Condition2", "YearBuilt", "MiscFeature",
+              "GarageYrBlt", 'PoolQC','PoolArea',"YearRemodAdd", 
+              "Utilities", "YrSold", "X1stFlrSF", "X2ndFlrSF", "LowQualFinSF",
+              "MSSubClass", "BsmtFinSF1", "BsmtFinSF2", "BsmtUnfSF", "MoSold", 
+              "WoodDeckSF", "OpenPorchSF", "X3SsnPorch")
+
 dim(train);dim(test)
 train[,(rmv.cols):=NULL]
 test[,(rmv.cols):=NULL]

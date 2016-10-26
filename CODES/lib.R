@@ -5,6 +5,7 @@ treat.missing.values <- function(dat){
   dat1[is.na(dat1[,'LotFrontage']),'LotFrontage']=median(dat1[,'LotFrontage'],na.rm=TRUE)
   dat1$LotFrontage[dat1$LotFrontage==313]=median(dat1[,'LotFrontage'],na.rm=TRUE)
   
+  dat[is.na(MSZoning), MSZoning:="RL"]
   #plot(dat1['LotFrontage'])
   dat1$Alley=as.character(dat1$Alley)
   dat1[is.na(dat1[,'Alley']),'Alley']='Missing'
@@ -34,6 +35,9 @@ treat.missing.values <- function(dat){
   dat1$BsmtFinType2=as.factor(dat1$BsmtFinType2)
   
   dat1[is.na(dat1[,'Electrical']),'Electrical']='SBrkr'
+  
+  dat[is.na(Exterior1st), Exterior1st:="RL"]
+  dat[is.na(Exterior2nd), Exterior2nd:="RL"]
   
   dat1$FireplaceQu=as.character(dat1$FireplaceQu)
   dat1[is.na(dat1[,'FireplaceQu']),'FireplaceQu']='No Fireplace'
@@ -66,6 +70,10 @@ treat.missing.values <- function(dat){
   return (dat1)
 }
 
+treat.missing.values.onlytest <- function(dat){
+  
+}
+
 RMSE <- function(act, pred,wt){
   sqrt(mean(((act - pred)*wt)^2, na.rm=T))
 }
@@ -76,6 +84,7 @@ combine.levels <- function(dat){
   levels(dat$RoofMatl)=c("CompShg", "CompShg", "CompShg" , "CompShg" ,"CompShg", "Tar&Grv","WdShake" ,"WdShngl")
   levels(dat$Heating)=c("Others" ,"Gas",  "Gas" , "Others" , "Others" , "Others")
   levels(dat$Electrical)=c("FuseA" ,"FuseF" ,"FuseP", "SBrkr" ,"SBrkr")
+  levels(dat)
   # levels(dat$GarageQual)
   # levels(dat$GarageCond)
   return (dat)
@@ -90,12 +99,35 @@ bin.variables <- function(dat){
   dat$GarageYrBltDecile=as.factor(dat$GarageYrBltDecile)
   
   dat$YearRemodAddDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,seq(1950,2020,by = 20)), labels=F))
-  dat$MoSoldQtr=ifelse(dat1$MoSold<=3,'Q1',
-                        ifelse(dat1$MoSold<=6,'Q2',
-                               ifelse(dat1$MoSold<=9,'Q3',
-                                      ifelse(dat1$MoSold<=12,'Q4'))))
-  dat1$MoSoldQtr=as.factor(dat1$MoSoldQtr)
+  dat$MoSoldQtr=ifelse(dat$MoSold<=3,'Q1',
+                        ifelse(dat$MoSold<=6,'Q2',
+                               ifelse(dat$MoSold<=9,'Q3',
+                                      ifelse(dat$MoSold<=12,'Q4'))))
+  dat$MoSoldQtr=as.factor(dat$MoSoldQtr)
   return (dat)
+}
+
+misc.features <- function(dat){
+  
+  dat$AgeofHouse= dat$YrSold-dat$YearBuilt
+  dat$Time_Since_Remodel= dat$YrSold-dat$YearRemodAdd
+  
+  logTransformCol=c('LotFrontage','MasVnrArea','TotalBsmtSF','OpenPorchSF','EnclosedPorch','X3SsnPorch','ScreenPorch','GrLivArea')
+  
+  for(x in logTransformCol) {
+    dat[[x]] <- log(dat[[x]] + 1)
+  }
+  
+  dat$num_ext_materials <- ifelse(as.character(dat$Exterior1st)==as.character(dat$Exterior2nd),1,2)
+  dat$num_basmt_materials <- ifelse(dat$BsmtFinType1=="No Basement",-1,
+                                    ifelse(dat$BsmtFinType1=="Unf",0,
+                                           ifelse(as.character(dat$BsmtFinType1)==
+                                                    as.character(dat$BsmtFinType2),1,2)))
+  
+  dat$perc_1st_2nd_floor <- dat$X2ndFlrSF/dat$X1stFlrSF
+  dat$perc_low_qlty_finsh <- dat$LowQualFinSF/dat$GrLivArea
+  
+  return(dat)
 }
 
 diagnostics.model <- function(dat,model,new_dat){
