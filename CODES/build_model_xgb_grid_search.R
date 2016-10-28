@@ -1,33 +1,50 @@
 library(data.table)
+library(caret)
+
 train_orig <- copy(train)
+test_orig <- copy(test)
+target = train$SalePrice
+train[,SalePrice:=NULL]
+fm <- formula(paste("~ ",paste(colnames(train),collapse = "+"), sep = ""))
+dummyObj = dummyVars(formula = fm, data = train, sep = NULL)
+train <- predict(dummyObj,train)
+train <- data.table(train)
+train$SalePrice = target
+
+model=lm(SalePrice~.,train)
+cols_to_keep <- gsub("`","",rownames(summary(model)$coeff))
+cols_to_keep <- cols_to_keep[-1]
+train <- subset(train, select = c(cols_to_keep,"SalePrice"))
+
 set.seed(123)
 indx = sample(1:nrow(train),0.3*nrow(train),replace = F)
 val <- train[indx,]
 train <- train[-indx,]
-drop.cols = c("BsmtCond","ExterCond","GarageCond")
-train <- subset(train,select = !(colnames(train)%in% drop.cols))
-val <- subset(val,select = !(colnames(val)%in% drop.cols))
 
-xgb_grid = expand.grid(nrounds = c(800,1000,1200,1500),
+xgb_grid = expand.grid(nrounds = c(100,300,500,1000),
                        eta = c(0.001, 0.005, 0.008, 0.01),
-                       max_depth = c(5,6,8),
+                       max_depth = c(5),
                        colsample_bytree = c(0.5,0.75,0.9,1),
-                       min_child_weight = c(5,10,20,50))
+                       min_child_weight = c(2,3,5,10))
 
 library(xgboost)
 y_train <- log(train[["SalePrice"]]+1)
 x_train = copy(train)
-
-cols.fac <- names(which(sapply(train,class)=="factor"))
-x_train <- x_train[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
-x_train[,SalePrice:=NULL]
+x_train[,":="(SalePrice=NULL, Id =NULL)]
 
 y_val <- log(val[["SalePrice"]]+1)
 x_val = copy(val)
+x_val[,":="(SalePrice=NULL, Id =NULL)]
 
-x_val <- x_val[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
-x_val[,SalePrice:=NULL]
-
+# cols.fac <- names(which(sapply(train,class)=="factor"))
+# x_train <- x_train[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
+# x_train[,SalePrice:=NULL]
+# 
+# y_val <- log(val[["SalePrice"]]+1)
+# x_val = copy(val)
+# 
+# x_val <- x_val[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
+# x_val[,SalePrice:=NULL]
 
 rmse_grid_search <- apply(xgb_grid, 1, function(parameterList){
   

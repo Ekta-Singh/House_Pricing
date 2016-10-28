@@ -35,6 +35,10 @@ treat.missing.values <- function(dat){
   dat1$BsmtFinType2=as.factor(dat1$BsmtFinType2)
   
   dat1[is.na(dat1[,'TotalBsmtSF']),'TotalBsmtSF']=0
+  dat1[is.na(dat1[,'BsmtFinSF1']),'BsmtFinSF1']=0
+  dat1[is.na(dat1[,'BsmtFinSF2']),'BsmtFinSF2']=0
+  dat1[is.na(dat1[,'BsmtUnfSF']),'BsmtUnfSF']=0
+  
   dat1[is.na(dat1[,'BsmtFullBath']),'BsmtFullBath']=0
   dat1[is.na(dat1[,'BsmtHalfBath']),'BsmtHalfBath']=0
   

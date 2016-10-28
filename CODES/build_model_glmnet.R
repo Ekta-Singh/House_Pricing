@@ -2,6 +2,7 @@ library(data.table)
 library(caret)
 
 train_orig <- copy(train)
+test_orig <- copy(test)
 target = train$SalePrice
 train[,SalePrice:=NULL]
 fm <- formula(paste("~ ",paste(colnames(train),collapse = "+"), sep = ""))
@@ -38,7 +39,7 @@ grid=seq(1,0,-0.001)
 set.seed(1)
 ridge.mod=glmnet(as.matrix(x_train),y_train,alpha=1, lambda =grid)
 cv.out=cv.glmnet(as.matrix(x_train),y_train,alpha=1)
-plot(cv.out)
+#plot(cv.out)
 bestlam =cv.out$lambda.min #0.09013617
 
 ridge.pred_test=predict (ridge.mod ,s=bestlam ,newx=as.matrix(x_val))
@@ -50,11 +51,5 @@ train_rmse_ridge=RMSE(y_train,ridge.pred_train,wt=1)
 print(test_rmse_ridge)
 print(train_rmse_ridge)
 
-test$pred=exp(ridge.pred_test[,1])
-test$SalePrice=exp(dat2[-train_ind, ]$SalePrice)
-test$resid=test$SalePrice-test$pred
-
-
-write.csv(xgb_grid, file="../MODEL/xgb_grid_search_results.csv", row.names=F)
 
 

@@ -30,25 +30,33 @@ x_train = copy(train)
 
 cols.fac <- names(which(sapply(train,class)=="factor"))
 x_train <- x_train[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
-x_train[,SalePrice:=NULL]
+x_train[,":="(SalePrice=NULL, Id =NULL)]
 
 y_val <- log(val[["SalePrice"]]+1)
 x_val = copy(val)
 
 x_val <- x_val[,(cols.fac):=lapply(.SD,function(x) as.numeric(x)), .SDcols=cols.fac]
-x_val[,SalePrice:=NULL]
+x_val[,":="(SalePrice=NULL, Id =NULL)]
 
-param <- list(max_depth = 6, 
-              eta = 0.01, 
+param <- list(max_depth = 5, 
+              eta = 0.07, 
               silent = 1,
               objective="reg:linear",
               eval_metric="rmse",
               # subsample = 0.75,
-              min_child_weight = 10,
+              min_child_weight = 2,
               colsample_bytree = 0.5,
               base_score =0)
-model_xgb <- xgboost(data=as.matrix(x_train),label = y_train, nrounds = 1000,
-                     params = param, verbose = 0)
+
+train.xg <- xgb.DMatrix(as.matrix((x_train)), label=y_train, missing=111222333)
+test.xg <- xgb.DMatrix(as.matrix((x_val)), label=y_val, missing=111222333)
+watchlist <- list(test = test.xg,train = train.xg)
+
+model_xgb <- xgb.train(data=train.xg, nrounds = 5000,
+                       params = param, verbose = 0, missing = 111222333, 
+                       early.stop.round = 500, 
+                       watchlist = watchlist, 
+                       maximize = F, print.every.n = 100)
 imp_xgb = xgb.importance(model = model_xgb, feature_names = colnames(x_train))
 write.csv(imp_xgb, file = "../MODEL/imp_xgb.csv", row.names=F)
 
