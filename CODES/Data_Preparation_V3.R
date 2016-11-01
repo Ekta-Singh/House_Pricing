@@ -53,14 +53,9 @@ train$GarageQual <- as.factor(as.character(train$GarageQual))
 
 
 # Removing Columns
-rmv.cols <- c("Id", "Street","Condition2", "YearBuilt", "MiscFeature",
-              "GarageYrBlt", 'PoolQC','PoolArea',"YearRemodAdd", 
-              "Utilities", "YrSold", "X1stFlrSF", "X2ndFlrSF", "LowQualFinSF",
-              "MSSubClass", "BsmtFinSF1", "BsmtFinSF2", "BsmtUnfSF", "MoSold", 
-              "WoodDeckSF", "OpenPorchSF", "X3SsnPorch")
 rmv.cols <- c("Street","Condition2", "MiscFeature", "BsmtFinSF2", "BsmtUnfSF",
               "GarageYrBlt", 'PoolQC','PoolArea', "X2ndFlrSF", "YearRemodAdd", 
-              "Utilities", 'MoSold','MSSubClass',"Heating")
+              "Utilities", 'MoSold','MSSubClass',"Heating","OverallCond")
 
 dim(train);dim(test)
 train[,(rmv.cols):=NULL]
@@ -83,12 +78,12 @@ test$num_ext_materials <- ifelse(as.character(test$Exterior1st)==as.character(te
 test$Partial_Old <- ifelse(((test$SaleCondition=="Partial" | test$SaleCondition=="Abnorml") &
                              test$YearBuilt<=1990),1,0)
 
-train[Time_Since_Remodel<0,AgeofHouse:="(50,80]"]
+train[Time_Since_Remodel<0,AgeofHouse:=50]
 train[Time_Since_Remodel<0,Time_Since_Remodel:=25]
-test[Time_Since_Remodel<0,AgeofHouse:="(50,80]"]
+test[Time_Since_Remodel<0,AgeofHouse:=50]
 test[Time_Since_Remodel<0,Time_Since_Remodel:=25]
 
-test[is.na(AgeofHouse), AgeofHouse:="(50,80]"]
+test[is.na(AgeofHouse), AgeofHouse:=25]
 
 train[,YearBuilt:=NULL]
 test[,YearBuilt:=NULL]

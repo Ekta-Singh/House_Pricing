@@ -78,7 +78,7 @@ treat.missing.values <- function(dat){
   
   dat1$PoolQC_f=ifelse(is.na(dat1$PoolQC)==TRUE,0,1)
   dat1$MiscFeature_f= as.factor(ifelse(is.na(dat1$MiscFeature)==TRUE,0,1))
-  dat1$Condition2_f=ifelse(dat1$Condition2=='Norm',1,0)
+  #dat1$Condition2_f=ifelse(dat1$Condition2=='Norm',1,0)
   
   return (dat1)
 }
@@ -100,13 +100,22 @@ combine.levels <- function(dat){
 }
 
 bin.variables <- function(dat){
-  #dat$YearBuiltDecile = as.factor(cut(dat$YearBuilt, breaks=c(1850,seq(1900,2010,by = 10)), labels = F))
-  
-  # dat$GarageYrBltDecile = cut(dat$GarageYrBlt, breaks=c(1900,1925,1950,1975,2000,2025), labels=F)
-  # dat$GarageYrBltDecile=as.character(dat$GarageYrBltDecile)
-  # dat[is.na(dat$GarageYrBltDecile),"GarageYrBltDecile"]="No Garage"
-  # dat$GarageYrBltDecile=as.factor(dat$GarageYrBltDecile)
-  # 
+  # dat$YearBuilt_f=ifelse(dat$YearBuilt<=1900,'Less than 1900',
+  #                        ifelse(dat$YearBuilt<=1910, '1900-1910',
+  #                               ifelse(dat$YearBuilt<=1920, '1910-1920',
+  #                                      ifelse(dat$YearBuilt<=1930, '1920-1930',
+  #                                             ifelse(dat$YearBuilt<=1940, '1930-1940',
+  #                                                    ifelse(dat$YearBuilt<=1950, '1940-1950',
+  #                                                           ifelse(dat$YearBuilt<=1960, '1950-1960',
+  #                                                                  ifelse(dat$YearBuilt<=1970, '1960-1970',
+  #                                                                         ifelse(dat$YearBuilt<=1980, '1970-1980',
+  #                                                                                ifelse(dat$YearBuilt<=1990, '1980-1990',
+  #                                                                                       ifelse(dat$YearBuilt<=2000, '1990-2000',
+  #                                                                                              ifelse(dat$YearBuilt<=2002, '2000-2002',
+  #                                                                                                     ifelse(dat$YearBuilt<=2004, '2002-2004',
+  #                                                                                                            ifelse(dat$YearBuilt<=2006, '2004-2006',
+  #                                                                                                                   ifelse(dat$YearBuilt<=2008, '2006-2008', '2008-2010')))))))))))))))  # 
+  # dat$YearBuilt_f = as.factor(dat$YearBuilt_f)
   dat$YearRemodeDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,seq(1950,2020,by = 20)), labels=F))
   dat$MoSoldQtr=ifelse(dat$MoSold<=3,'Q1',
                         ifelse(dat$MoSold<=6,'Q2',
@@ -119,22 +128,42 @@ bin.variables <- function(dat){
 misc.features <- function(dat){
   
   dat$AgeofHouse= dat$YrSold-dat$YearBuilt
+  # dat$AgeofHouse <- as.factor(cut(dat$AgeofHouse,breaks = c(0,5,10,20,50,80,150),
+  #                                 include.lowest = T))
   dat$Time_Since_Remodel= dat$YrSold-dat$YearRemodAdd
-  
-  logTransformCol=c('LotFrontage','MasVnrArea','TotalBsmtSF','OpenPorchSF','EnclosedPorch','X3SsnPorch','ScreenPorch','GrLivArea')
-  
-  for(x in logTransformCol) {
-    dat[[x]] <- log(dat[[x]] + 1)
-  }
+  dat$Overall_Quality_Cond <- dat$OverallQual*dat$OverallCond
   
   dat$num_ext_materials <- ifelse(as.character(dat$Exterior1st)==as.character(dat$Exterior2nd),1,2)
   dat$num_basmt_materials <- ifelse(dat$BsmtFinType1=="No Basement",-1,
                                     ifelse(dat$BsmtFinType1=="Unf",0,
                                            ifelse(as.character(dat$BsmtFinType1)==
                                                     as.character(dat$BsmtFinType2),1,2)))
+
+  #dat$perc_2nd_1st_floor <- dat$X2ndFlrSF/dat$X1stFlrSF
+  #dat$perc_1st_tot_floor <- dat$X1stFlrSF/dat$GrLivArea
+  #dat$perc_unf_bsmt <- ifelse(dat$TotalBsmtSF==0,-1,dat$BsmtUnfSF/dat$TotalBsmtSF)
   
-  dat$perc_1st_2nd_floor <- dat$X2ndFlrSF/dat$X1stFlrSF
-  dat$perc_low_qlty_finsh <- dat$LowQualFinSF/dat$GrLivArea
+  cols.ratings <- c("ExterQual","ExterCond","BsmtQual", "BsmtCond", "HeatingQC", "KitchenQual", 
+                    "FireplaceQu","GarageQual", "GarageCond")
+  dat$num_excellents <- apply(dat[,cols.ratings,with=F],1, function(x) length(which(x=="Ex")))
+  dat[num_excellents<3,num_excellents:=0]
+  dat[num_excellents>=3,num_excellents:=1]
+  dat$num_excellents <- as.factor(dat$num_excellents)
+  
+  logTransformCol=c('LotFrontage','MasVnrArea','TotalBsmtSF','OpenPorchSF','EnclosedPorch','X3SsnPorch',
+                    "BsmtFinSF1", "X1stFlrSF", 'ScreenPorch','GrLivArea')
+  for(x in logTransformCol){
+    dat[[x]] <- log(dat[[x]] + 1)
+  }
+  
+  dat$FAR <- (dat$GrLivArea)/dat$LotArea
+  dat$Partial_Old <- ifelse(((dat$SaleCondition=="Partial" | dat$SaleCondition=="Abnorml") &
+                               dat$YearBuilt<=1990),1,0)
+  
+  dat$Partial_Quality <- ifelse(((dat$SaleCondition=="Partial" | dat$SaleCondition=="Abnorml") &
+                                   (dat$OverallQual <=6 | dat$OverallCond<=5)),2,1)
+  dat[!(dat$SaleCondition=="Partial" | dat$SaleCondition=="Abnorml"),Partial_Quality:=0]
+  dat$Partial_Quality <- as.factor(dat$Partial_Quality)
   
   return(dat)
 }
@@ -162,6 +191,15 @@ diagnostics.model <- function(dat,model,new_dat){
   p <- ggplot(df,aes(y=residuals, x=predicted_price)) + geom_point(size=1,color='#CC0000') +
     ggtitle("Test: Predicted vs Residuals")
   ggsave(p, file="../MODEL/PLOTS/test_res_vs_preds.png")
+  
+  # residuals vs actuals
+  p = ggplot(df2,aes(y=residuals, x=SalePrice)) + geom_point(size=1,color='#CC0000') + 
+    ggtitle("Train: Actuals vs Residuals")
+  ggsave(p, file="../MODEL/PLOTS/train_res_vs_actuals.png")
+  
+  p <- ggplot(df,aes(y=residuals, x=SalePrice)) + geom_point(size=1,color='#CC0000') +
+    ggtitle("Test: Actuals vs Residuals")
+  ggsave(p, file="../MODEL/PLOTS/test_res_vs_actuals.png")
 }
 
 genPlots <- function(dat, buckets=200, tt){
