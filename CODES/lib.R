@@ -88,12 +88,14 @@ RMSE <- function(act, pred,wt){
 }
 
 combine.levels <- function(dat){
+  
+  levels(dat$LandSlope) = c("Gtl","Mod-Sev")
   levels(dat$LotShape)=c("IR1", "IR2_3" ,"IR2_3" ,"Reg")
   levels(dat$RoofStyle)=c("Flat","Gable" ,"Gambrel", "Mansard_Hip","Mansard_Hip", "Shed")
   levels(dat$RoofMatl)=c("CompShg", "CompShg", "CompShg" , "CompShg" ,"CompShg", "Tar&Grv","WdShake" ,"WdShngl")
-  levels(dat$Heating)=c("Others" ,"Gas",  "Gas" , "Others" , "Others" , "Others")
-  levels(dat$Electrical)=c("FuseA" ,"FuseF" ,"FuseP", "SBrkr" ,"SBrkr")
-  #levels(dat)
+  #levels(dat$Heating)=c("Others" ,"Gas",  "Gas" , "Others" , "Others" , "Others")
+  #levels(dat$Electrical)=c("FuseA" ,"FuseF" ,"FuseP", "SBrkr" ,"SBrkr")
+  levels(dat$SaleCondition) <- c("Abnorml", "AdjLand", "Normal",  "Normal",  "Normal",  "Partial")
   # levels(dat$GarageQual)
   # levels(dat$GarageCond)
   return (dat)
@@ -117,11 +119,11 @@ bin.variables <- function(dat){
   #                                                                                                                   ifelse(dat$YearBuilt<=2008, '2006-2008', '2008-2010')))))))))))))))  # 
   # dat$YearBuilt_f = as.factor(dat$YearBuilt_f)
   dat$YearRemodeDecile = as.factor(cut(dat$YearRemodAdd, breaks=c(1925,seq(1950,2020,by = 20)), labels=F))
-  dat$MoSoldQtr=ifelse(dat$MoSold<=3,'Q1',
-                        ifelse(dat$MoSold<=6,'Q2',
-                               ifelse(dat$MoSold<=9,'Q3',
-                                      ifelse(dat$MoSold<=12,'Q4'))))
-  dat$MoSoldQtr=as.factor(dat$MoSoldQtr)
+  # dat$MoSoldQtr=ifelse(dat$MoSold<=3,'Q1',
+  #                       ifelse(dat$MoSold<=6,'Q2',
+  #                              ifelse(dat$MoSold<=9,'Q3',
+  #                                     ifelse(dat$MoSold<=12,'Q4'))))
+  # dat$MoSoldQtr=as.factor(dat$MoSoldQtr)
   return (dat)
 }
 
@@ -153,7 +155,13 @@ misc.features <- function(dat){
   logTransformCol=c('LotFrontage','MasVnrArea','TotalBsmtSF','OpenPorchSF','EnclosedPorch','X3SsnPorch',
                     "BsmtFinSF1", "X1stFlrSF", 'ScreenPorch','GrLivArea')
   for(x in logTransformCol){
-    dat[[x]] <- log(dat[[x]] + 1)
+    if(x!="GrLivArea"){
+      #dat[[x]] <- log(dat[[x]] + 1)
+      dat[[x]] <- dat[[x]]^0.4
+    }else{
+      dat[[x]] <- dat[[x]]^0.4
+    }
+
   }
   
   dat$FAR <- (dat$GrLivArea)/dat$LotArea

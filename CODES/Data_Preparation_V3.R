@@ -53,9 +53,10 @@ train$GarageQual <- as.factor(as.character(train$GarageQual))
 
 
 # Removing Columns
-rmv.cols <- c("Street","Condition2", "MiscFeature", "BsmtFinSF2", "BsmtUnfSF",
-              "GarageYrBlt", 'PoolQC','PoolArea', "X2ndFlrSF", "YearRemodAdd", 
-              "Utilities", 'MoSold','MSSubClass',"Heating","OverallCond")
+rmv.cols <- c("Street","Condition2", "MiscFeature", 'PoolQC','PoolArea', 
+              "BsmtFinSF2", "BsmtUnfSF", "X2ndFlrSF", 
+              "GarageYrBlt", "YearRemodAdd", 'MoSold',
+              "Utilities", 'MSSubClass',"Heating","OverallCond")
 
 dim(train);dim(test)
 train[,(rmv.cols):=NULL]

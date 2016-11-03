@@ -39,7 +39,7 @@ x_val[,":="(SalePrice=NULL, Id =NULL)]
 
 model_rf = randomForest(x=x_train,y=y_train,xtest = x_val,ytest = y_val,
                         ntree = 1000, importance = T, 
-                        nodesize = 5, keep.forest = T, mtry = 200)
+                        nodesize = 5, keep.forest = T)
 
 preds_rf_test = predict(model_rf,newdata = x_val,type="response")
 rmse_rf_test = RMSE(log(y_val^2.5+1),log(preds_rf_test^2.5+1),wt=1)

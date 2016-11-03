@@ -40,6 +40,7 @@ ridge.pred_test=predict (ridge.mod ,s=bestlam ,newx=as.matrix(x_test))
 
 test$SalePrice =(ridge.pred_test[,1])^2.5
 
-write.csv(test[,c("Id","SalePrice"),with=F], file = "../MODEL/Submission_V8.csv", row.names = F)
+write.csv(test[,c("Id","SalePrice"),with=F], 
+          file = "../MODEL/Submission_V9.csv", row.names = F)
 
 
