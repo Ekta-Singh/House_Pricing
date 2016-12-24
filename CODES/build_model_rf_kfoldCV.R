@@ -44,7 +44,7 @@ for(i in 1:5){
   
   model_rf = randomForest(x=x_train,y=y_train,xtest = x_val,ytest = y_val,
                           ntree = 1000, importance = T, 
-                          nodesize = 10, keep.forest = T)
+                          nodesize = 2, keep.forest = T)
   
   preds_rf_test=predict(model_rf,newdata = x_val,type="response")
   preds_rf_train=predict(model_rf,newdata = x_train,type="response")

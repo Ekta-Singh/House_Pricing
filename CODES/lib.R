@@ -89,7 +89,7 @@ RMSE <- function(act, pred,wt){
 
 combine.levels <- function(dat){
   
-  levels(dat$LandSlope) = c("Gtl","Mod-Sev")
+  levels(dat$LandSlope) = c("Gtl","Mod-Sev","Mod-Sev")
   levels(dat$LotShape)=c("IR1", "IR2_3" ,"IR2_3" ,"Reg")
   levels(dat$RoofStyle)=c("Flat","Gable" ,"Gambrel", "Mansard_Hip","Mansard_Hip", "Shed")
   levels(dat$RoofMatl)=c("CompShg", "CompShg", "CompShg" , "CompShg" ,"CompShg", "Tar&Grv","WdShake" ,"WdShngl")
@@ -145,12 +145,21 @@ misc.features <- function(dat){
   #dat$perc_1st_tot_floor <- dat$X1stFlrSF/dat$GrLivArea
   #dat$perc_unf_bsmt <- ifelse(dat$TotalBsmtSF==0,-1,dat$BsmtUnfSF/dat$TotalBsmtSF)
   
-  cols.ratings <- c("ExterQual","ExterCond","BsmtQual", "BsmtCond", "HeatingQC", "KitchenQual", 
-                    "FireplaceQu","GarageQual", "GarageCond")
-  dat$num_excellents <- apply(dat[,cols.ratings,with=F],1, function(x) length(which(x=="Ex")))
-  dat[num_excellents<3,num_excellents:=0]
-  dat[num_excellents>=3,num_excellents:=1]
-  dat$num_excellents <- as.factor(dat$num_excellents)
+  cols.ratings.qual <- c("ExterQual","BsmtQual", "HeatingQC", "KitchenQual", 
+                         "FireplaceQu","GarageQual")
+  cols.ratings.cond <- c("ExterCond","BsmtCond","GarageCond")
+  dat$num_excellents_qual <- apply(dat[,cols.ratings.qual,with=F],1, function(x) length(which(x=="Ex")))
+  dat$num_excellents_cond <- apply(dat[,cols.ratings.cond,with=F],1, function(x) length(which(x=="Ex")))
+  
+  dat$perc_open_area <- 1-((dat$X1stFlrSF + dat$EnclosedPorch + dat$X3SsnPorch + 
+                           dat$ScreenPorch + dat$GarageArea)/dat$LotArea)
+  
+  # dat$perc_open_built <- sum(dat$PoolArea + dat$WoodDeckSF + dat$OpenPorchSF +
+  #                              dat$EnclosedPorch + dat$ScreenPorch + 
+  #                              dat$X3SsnPorch)/(dat$LotArea - sum(dat$X1stFlrSF + dat$GarageArea))
+  # dat[num_excellents<3,num_excellents:=0]
+  # dat[num_excellents>=3,num_excellents:=1]
+  # dat$num_excellents <- as.factor(dat$num_excellents)
   
   logTransformCol=c('LotFrontage','MasVnrArea','TotalBsmtSF','OpenPorchSF','EnclosedPorch','X3SsnPorch',
                     "BsmtFinSF1", "X1stFlrSF", 'ScreenPorch','GrLivArea')

@@ -55,7 +55,7 @@ train$GarageQual <- as.factor(as.character(train$GarageQual))
 # Removing Columns
 rmv.cols <- c("Street","Condition2", "MiscFeature", 'PoolQC','PoolArea', 
               "BsmtFinSF2", "BsmtUnfSF", "X2ndFlrSF", 
-              "GarageYrBlt", "YearRemodAdd", 'MoSold',
+              "GarageYrBlt", "YearRemodAdd",
               "Utilities", 'MSSubClass',"Heating","OverallCond")
 
 dim(train);dim(test)
@@ -93,6 +93,11 @@ test[,YearBuilt:=NULL]
 train <- combine.levels(dat=train)
 test <- combine.levels(dat=test)
 
+rmv.cols2 <- c("Alley","LotShape","LotConfig","LandSlope","MiscVal","YrSold",
+               "Exterior2nd","MasVnrType","BsmtFinType2")
+
+train[,(rmv.cols2):=NULL]
+test[,(rmv.cols2):=NULL]
 
 
 

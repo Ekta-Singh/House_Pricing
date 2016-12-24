@@ -22,8 +22,8 @@ train <- train[indx,]
 train$kfolds <- rep(x = 1:5, length.out = nrow(train))
 
 library(glmnet)
-train_scored = NULL
 train_orig2 <- copy(train)
+train_scored = NULL
 bestlam_all = c()
 test_rmse_ridge = c()
 train_rmse_ridge = c()
@@ -37,6 +37,9 @@ for(i in 1:5){
   y_train <- train[["SalePrice"]]^0.4
   x_train = copy(train)
   x_train[,":="(SalePrice=NULL, kfolds = NULL)]
+  
+  y_train = y_train[x_train$GrLivArea<=27]
+  x_train = subset(x_train, GrLivArea<=27)
   
   y_val <- log(val[["SalePrice"]]+1)
   y_val <- val[["SalePrice"]]^0.4
